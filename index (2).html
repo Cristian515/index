@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Panel Admin - Enti</title>
+  <style>
+    /* Reset y base */
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #333;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 1rem;
+      margin: 0;
+    }
+    #loginPanel, #adminPanel {
+      background: white;
+      padding: 2.5rem 3rem;
+      border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+      width: 100%;
+      max-width: 480px;
+    }
+    h1 { font-weight: 700; color: #4b0082; margin-bottom: 1.5rem; text-align: center; user-select: none; }
+    label { display: block; margin-bottom: 0.4rem; font-weight: 600; color: #555; }
+    input[type="text"], input[type="password"], input[type="number"], input[type="file"], select, textarea {
+      width: 100%; padding: 0.55rem 1rem; margin-bottom: 1.2rem;
+      border: 2px solid #ddd; border-radius: 8px; font-size: 1rem;
+      transition: border-color 0.25s ease; font-family: inherit; resize: vertical;
+    }
+    input:focus, select:focus, textarea:focus { outline: none; border-color: #764ba2; box-shadow: 0 0 8px #a78ade88; }
+    button {
+      width: 100%; background: #764ba2; color: white; padding: 0.75rem 0;
+      font-size: 1.1rem; font-weight: 700; border: none; border-radius: 10px;
+      cursor: pointer; user-select: none; transition: background-color 0.3s ease;
+      box-shadow: 0 5px 12px rgba(118,75,162,0.6); margin-top: 0.5rem;
+    }
+    button:hover { background: #5a367a; box-shadow: 0 7px 20px rgba(90,54,122,0.9); }
+    .msg { margin-top: 1rem; color: #2a7a2a; font-weight: 600; text-align: center; user-select: none; }
+    .error { color: #d9534f; margin-top: -0.8rem; margin-bottom: 1rem; font-weight: 600; text-align: center; user-select: none; }
+    .section { margin-top: 2rem; }
+    #productList, #messageList {
+      margin-top: 1.5rem; max-height: 250px; overflow-y: auto;
+      border: 1px solid #ddd; border-radius: 8px; padding: 0.5rem;
+    }
+    #productList label, #messageList .message-item {
+      display: flex; align-items: center; margin-bottom: 0.5rem;
+      user-select: none; font-weight: 500; color: #333; justify-content: space-between;
+    }
+    #productList label img {
+      width: 40px; height: 40px; object-fit: cover; border-radius: 6px;
+      margin-right: 0.75rem; border: 1px solid #ccc;
+    }
+    #productList input[type="checkbox"] { margin-right: 0.75rem; width: 18px; height: 18px; cursor: pointer; }
+    .message-content { flex: 1; margin-left: 0.5rem; max-width: 75%; }
+    .message-meta { font-size: 0.85rem; color: #666; margin-bottom: 0.3rem; }
+    .delete-btn { background: #d9534f; border: none; color: white; border-radius: 8px;
+      padding: 0.25rem 0.6rem; cursor: pointer; font-weight: 600; transition: background-color 0.25s ease; user-select: none;
+    }
+    .delete-btn:hover { background: #b7373a; }
+    #deleteSelectedBtn, #deleteAllMessagesBtn { background: #d9534f; box-shadow: 0 5px 12px rgba(217,83,79,0.6); margin-top: 1rem; }
+    #deleteSelectedBtn:hover, #deleteAllMessagesBtn:hover { background: #b7373a; box-shadow: 0 7px 20px rgba(183,55,58,0.9); }
+    @media (max-width: 480px) {
+      #loginPanel, #adminPanel { padding: 2rem; max-width: 100%; }
+      .message-content { max-width: 60%; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- LOGIN -->
+  <div id="loginPanel">
+    <h1>Ingreso al Panel Admin</h1>
+    <form id="loginForm" autocomplete="off">
+      <label for="username">Usuario:</label>
+      <input type="text" id="username" required autocomplete="username" />
+      <label for="password">Contraseña:</label>
+      <input type="password" id="password" required autocomplete="current-password" />
+      <button type="submit">Entrar</button>
+      <div id="loginError" class="error"></div>
+    </form>
+  </div>
+
+  <!-- PANEL ADMIN -->
+  <div id="adminPanel" style="display:none;">
+
+    <h1>Panel Admin</h1>
+
+    <!-- AGREGAR PRODUCTOS -->
+    <section class="section" id="productSection">
+      <h2>Agregar nuevo producto</h2>
+      <form id="productForm" autocomplete="off">
+        <label for="name">Nombre del producto:</label>
+        <input type="text" id="name" required />
+
+        <label for="price">Precio (Q):</label>
+        <input type="number" id="price" min="0" step="0.01" required />
+
+        <label for="category">Categoría:</label>
+        <select id="category" required>
+          <option value="">Selecciona una categoría</option>
+          <option value="Ropa">Ropa</option>
+          <option value="Hogar">Hogar</option>
+          <option value="Accesorios">Accesorios</option>
+          <option value="Ofertas">Ofertas</option>
+        </select>
+
+        <label for="imageFile">Imagen del producto:</label>
+        <input type="file" id="imageFile" accept="image/*" required />
+
+        <button type="submit">Guardar producto</button>
+      </form>
+
+      <div id="productList"></div>
+      <button id="deleteSelectedBtn" style="display:none;">Borrar productos seleccionados</button>
+    </section>
+
+    <!-- MENSAJES -->
+    <section class="section" id="messageSection">
+      <h2>Mensajes recibidos</h2>
+      <div id="messageList"></div>
+      <button id="deleteAllMessagesBtn" style="display:none;">Borrar todos los mensajes</button>
+    </section>
+
+    <!-- FORMULARIO DE CONTACTO -->
+    <section class="section" id="contactSection">
+      <h2>Contacto</h2>
+      <form id="contactForm" autocomplete="off">
+        <label for="contactName">Nombre:</label>
+        <input type="text" id="contactName" required />
+        <label for="contactEmail">Correo electrónico:</label>
+        <input type="email" id="contactEmail" required />
+        <label for="contactMessage">Mensaje:</label>
+        <textarea id="contactMessage" rows="3" required></textarea>
+        <button type="submit">Enviar mensaje</button>
+        <div id="contactMsg" class="msg"></div>
+      </form>
+    </section>
+
+  </div>
+
+  <script>
+    // Login
+    const loginForm = document.getElementById('loginForm');
+    const loginError = document.getElementById('loginError');
+    const loginPanel = document.getElementById('loginPanel');
+    const adminPanel = document.getElementById('adminPanel');
+
+    const USER = 'Cristian';
+    const PASS = 'Cristian2006';
+
+    loginForm.addEventListener('submit', e => {
+      e.preventDefault();
+      loginError.textContent = '';
+      const username = document.getElementById('username').value.trim();
+      const password = document.getElementById('password').value;
+
+      if(username === USER && password === PASS){
+        loginPanel.style.display = 'none';
+        adminPanel.style.display = 'block';
+        loadProducts();
+        loadMessages();
+      } else {
+        loginError.textContent = 'Usuario o contraseña incorrectos.';
+      }
+    });
+
+    // Productos
+    const productForm = document.getElementById('productForm');
+    const productList = document.getElementById('productList');
+    const deleteSelectedBtn = document.getElementById('deleteSelectedBtn');
+    const msg = document.createElement('div');
+    msg.className = 'msg';
+    productForm.after(msg);
+
+    function loadProducts() {
+      const products = JSON.parse(localStorage.getItem('entiProducts')) || [];
+      productList.innerHTML = '';
+
+      if(products.length === 0){
+        productList.textContent = 'No hay productos guardados.';
+        deleteSelectedBtn.style.display = 'none';
+        return;
+      }
+
+      products.forEach((product, index) => {
+        const label = document.createElement('label');
+        label.innerHTML = `
+          <input type="checkbox" data-index="${index}" />
+          <img src="${product.imageURL}" alt="${product.name}" />
+          ${product.name} - Q${product.price.toFixed(2)} (${product.category})
+        `;
+        productList.appendChild(label);
+      });
+      deleteSelectedBtn.style.display = 'inline-block';
+    }
+
+    productForm.addEventListener('submit', e => {
+      e.preventDefault();
+      msg.textContent = '';
+      const name = document.getElementById('name').value.trim();
+      const price = parseFloat(document.getElementById('price').value);
+      const category = document.getElementById('category').value;
+      const imageFile = document.getElementById('imageFile').files[0];
+
+      if(!name || isNaN(price) || !category || !imageFile){
+        msg.style.color = 'red';
+        msg.textContent = 'Por favor, completa todos los campos correctamente.';
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = function() {
+        const imageURL = reader.result;
+        const products = JSON.parse(localStorage.getItem('entiProducts')) || [];
+        if(products.some(p => p.name.toLowerCase() === name.toLowerCase())){
+          msg.style.color = 'red';
+          msg.textContent = 'Ya existe un producto con ese nombre.';
+          return;
+        }
+        products.push({ name, price, category, imageURL });
+        localStorage.setItem('entiProducts', JSON.stringify(products));
+        msg.style.color = 'green';
+        msg.textContent = 'Producto guardado correctamente.';
+        productForm.reset();
+        loadProducts();
+      };
+      reader.readAsDataURL(imageFile);
+    });
+
+    deleteSelectedBtn.addEventListener('click', () => {
+      const checkboxes = productList.querySelectorAll('input[type="checkbox"]:checked');
+      if(checkboxes.length === 0){ alert('Selecciona al menos un producto para borrar.'); return; }
+      if(!confirm('¿Seguro que quieres borrar los productos seleccionados?')) return;
+      let products = JSON.parse(localStorage.getItem('entiProducts')) || [];
+      const indexesToDelete = Array.from(checkboxes).map(cb => parseInt(cb.dataset.index));
+      products = products.filter((_, i) => !indexesToDelete.includes(i));
+      localStorage.setItem('entiProducts', JSON.stringify(products));
+      loadProducts();
+    });
+
+    // Mensajes
+    const messageList = document.getElementById('messageList');
+    const deleteAllMessagesBtn = document.getElementById('deleteAllMessagesBtn');
+
+    function loadMessages(){
+      const messages = JSON.parse(localStorage.getItem('entiMessages')) || [];
+      messageList.innerHTML = '';
+      if(messages.length === 0){ messageList.textContent = 'No hay mensajes recibidos.'; deleteAllMessagesBtn.style.display = 'none'; return; }
+      messages.forEach((msg, i) => {
+        const div = document.createElement('div');
+        div.classList.add('message-item');
+        div.innerHTML = `
+          <div class="message-content">
+            <div class="message-meta"><strong>${msg.name}</strong> &lt;${msg.email}&gt;</div>
+            <div>${msg.message.replace(/\n/g, '<br>')}</div>
+          </div>
+          <button class="delete-btn" data-index="${i}" title="Eliminar mensaje">X</button>
+        `;
+        messageList.appendChild(div);
+      });
+      deleteAllMessagesBtn.style.display = 'inline-block';
+      messageList.querySelectorAll('.delete-btn').forEach(btn => btn.addEventListener('click', () => {
+        const idx = parseInt(btn.dataset.index);
+        if(confirm('¿Eliminar este mensaje?')){
+          let msgs = JSON.parse(localStorage.getItem('entiMessages')) || [];
+          msgs.splice(idx,1);
+          localStorage.setItem('entiMessages', JSON.stringify(msgs));
+          loadMessages();
+        }
+      }));
+    }
+
+    deleteAllMessagesBtn.addEventListener('click', () => {
+      if(confirm('¿Seguro que quieres borrar todos los mensajes?')){
+        localStorage.removeItem('entiMessages');
+        loadMessages();
+      }
+    });
+
+    // Contacto
+    const contactForm = document.getElementById('contactForm');
+    const contactMsg = document.getElementById('contactMsg');
+
+    contactForm.addEventListener('submit', e => {
+      e.preventDefault();
+      contactMsg.textContent = '';
+      contactMsg.style.color = 'green';
+      const nm = document.getElementById('contactName').value.trim();
+      const em = document.getElementById('contactEmail').value.trim();
+      const mm = document.getElementById('contactMessage').value.trim();
+      if(!nm||!em||!mm){ contactMsg.style.color = 'red'; contactMsg.textContent = 'Por favor, completa todos los campos.'; return; }
+      const msgs = JSON.parse(localStorage.getItem('entiMessages'))||[];
+      msgs.push({ name:nm,email:em,message:mm });
+      localStorage.setItem('entiMessages', JSON.stringify(msgs));
+      contactMsg.textContent = 'Mensaje enviado correctamente.';
+      contactForm.reset(); loadMessages();
+    });
+  </script>
+</body>
+</html>
